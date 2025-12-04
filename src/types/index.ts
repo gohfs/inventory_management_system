@@ -93,6 +93,19 @@ export interface ActivityItem {
   userId: string;
 }
 
+export interface EntityActivity {
+  id: string;
+  type: string;
+  description: string;
+  item_name: string;
+  timestamp: string;
+  user_id: string;
+  action: string;
+  entity_id: string;
+  entity_type: string;
+  metadata?: Record<string, any>;
+}
+
 export interface ApiResponse<T> {
   data: T;
   message?: string;
@@ -118,4 +131,31 @@ export interface CreateWarehouse {
   name: string;
   location: string;
   description?: string;
+}
+
+export interface SellItem {
+  id: string;
+  warehouseId: string;
+  warehouseName?: string;
+  inventoryId: string;
+  inventoryName?: string;
+  quantity: number;
+  sellPrice: number;
+  totalAmount: number;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: string;
+}
+
+export interface CreateSellItem {
+  warehouse_id: string;
+  inventory_id: string;
+  quantity: number;
+  sell_price: number;
+  description?: string;
+}
+
+export interface UpdateSellItem extends Partial<CreateSellItem> {
+  id: string;
 }

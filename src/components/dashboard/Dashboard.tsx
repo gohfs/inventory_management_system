@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router';
 import { useAuthStore } from '../../store/authStore';
 import { useDashboardStats } from '../../hooks/useDashboardStats';
 import { useWarehouseById } from '../../hooks/useWarehouseData';
+import { useWarehouseActivities } from '../../hooks/useEntityActivities';
 import {
   Container,
   Typography,
@@ -34,13 +35,26 @@ const Dashboard: React.FC = () => {
   const shouldFetchWarehouse = !!(user?.warehouseId && !stats?.warehouseName);
   const { data: warehouseData } = useWarehouseById(shouldFetchWarehouse ? user?.warehouseId : undefined);
 
+  // Fetch recent activities using the new entity endpoint
+  const shouldFetchActivities = !!user?.warehouseId;
+  const { data: recentActivities, isLoading: activitiesLoading, error: activitiesError } = useWarehouseActivities(
+    shouldFetchActivities ? (user?.warehouseId || '') : '',
+    5
+  );
+
   // Debug logging for query state
   React.useEffect(() => {
     console.log('[Dashboard] Query state:', {
       isLoading,
       error: error?.message,
       hasStats: !!stats,
-      stats: stats
+      activitiesLoading,
+      activitiesError: activitiesError?.message,
+      hasRecentActivities: !!recentActivities,
+      activitiesCount: recentActivities?.length || 0,
+      stats: stats,
+      shouldFetchActivities,
+      warehouseId: user?.warehouseId
     });
     if (stats) {
       console.log('[Dashboard] Stats data:', {
@@ -48,21 +62,42 @@ const Dashboard: React.FC = () => {
         lowStockItems: stats.lowStockItems,
         totalCategories: stats.totalCategories,
         totalValue: stats.totalValue,
-        warehouseName: stats.warehouseName,
-        recentActivities: stats.recentActivities?.length
+        warehouseName: stats.warehouseName
       });
     }
-  }, [isLoading, error, stats]);
+    if (recentActivities) {
+      console.log('[Dashboard] Recent activities from entity endpoint:', recentActivities);
+    }
+    if (activitiesError) {
+      console.error('[Dashboard] Activities error:', activitiesError);
+    }
+  }, [isLoading, error, stats, recentActivities, activitiesLoading, activitiesError, shouldFetchActivities, user?.warehouseId]);
 
-  const formatCurrency = (amount: number): string => {
+  const formatCurrency = (amount: number | undefined | null): string => {
+    // Handle undefined, null, or NaN values
+    if (amount === undefined || amount === null || isNaN(Number(amount))) {
+      return '$0.00';
+    }
+
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
-    }).format(amount);
+    }).format(Number(amount));
   };
 
   const formatDate = (dateString: string): string => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    if (!dateString) {
+      return '-';
+    }
+
+    const date = new Date(dateString);
+
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      return '-';
+    }
+
+    return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
@@ -267,35 +302,54 @@ const Dashboard: React.FC = () => {
               Recent Activity
             </Typography>
             
-            {!isLoading && stats?.recentActivities && stats.recentActivities.length > 0 ? (
+            {activitiesError ? (
+              <Alert severity="warning" sx={{ mt: 2 }}>
+                <Typography variant="body2">
+                  Unable to load recent activities. This feature may require backend API support.
+                </Typography>
+              </Alert>
+            ) : !isLoading && !activitiesLoading && recentActivities && recentActivities.length > 0 ? (
               <Stack spacing={2}>
-                {stats.recentActivities.slice(0, 5).map((activity) => (
-                  <Box
-                    key={activity.id}
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 2,
-                      p: 2,
-                      bgcolor: 'grey.50',
-                      borderRadius: 1,
-                      border: 1,
-                      borderColor: 'grey.200'
-                    }}
-                  >
-                    <Typography variant="h6">📝</Typography>
-                    <Box flex={1}>
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                        {activity.description} - "{activity.item_name}"
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {formatDate(activity.timestamp)}
-                      </Typography>
+                {recentActivities.map((activity) => {
+                  // Get action icon based on type
+                  const getActionIcon = (type: string) => {
+                    switch(type.toLowerCase()) {
+                      case 'create': return '➕';
+                      case 'update': return '✏️';
+                      case 'delete': return '🗑️';
+                      default: return '📝';
+                    }
+                  };
+
+                  return (
+                    <Box
+                      key={activity.id}
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 2,
+                        p: 2,
+                        bgcolor: 'grey.50',
+                        borderRadius: 1,
+                        border: 1,
+                        borderColor: 'grey.200'
+                      }}
+                    >
+                      <Typography variant="h6">{getActionIcon(activity.type)}</Typography>
+                      <Box flex={1}>
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                          {activity.description}
+                          {activity.itemName && activity.itemName !== 'Unknown Item' && ` - "${activity.itemName}"`}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {formatDate(activity.timestamp)}
+                        </Typography>
+                      </Box>
                     </Box>
-                  </Box>
-                ))}
+                  );
+                })}
               </Stack>
-            ) : !isLoading ? (
+            ) : !isLoading && !activitiesLoading ? (
               <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 3 }}>
                 No recent activity
               </Typography>

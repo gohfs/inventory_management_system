@@ -127,38 +127,40 @@ const ItemForm: React.FC<ItemFormProps> = ({
   };
 
   React.useEffect(() => {
-    if (editingItem) {
-      reset({
-        name: editingItem.name || '',
-        sku: editingItem.sku || '',
-        category: editingItem.category || '',
-        quantity: editingItem.quantity || 0,
-        buyPrice: editingItem.buyPrice || 0,
-        sellPrice: editingItem.sellPrice || 0,
-        minStockLevel: editingItem.minStockLevel || 0,
-        description: editingItem.description || '',
-      });
-      // Reset interaction state for edit mode
-      setHasUserInteracted(true);
-    } else {
-      reset({
-        name: '',
-        sku: '',
-        category: '',
-        quantity: 0,
-        buyPrice: 0,
-        sellPrice: 0,
-        minStockLevel: 0,
-        description: '',
-      });
-      // Reset interaction state for add mode
-      setHasUserInteracted(false);
+    if (open) {
+      if (editingItem) {
+        reset({
+          name: editingItem.name || '',
+          sku: editingItem.sku || '',
+          category: editingItem.category || '',
+          quantity: editingItem.quantity || 0,
+          buyPrice: editingItem.buyPrice || 0,
+          sellPrice: editingItem.sellPrice || 0,
+          minStockLevel: editingItem.minStockLevel || 0,
+          description: editingItem.description || '',
+        });
+        // Reset interaction state for edit mode
+        setHasUserInteracted(true);
+      } else {
+        reset({
+          name: '',
+          sku: '',
+          category: '',
+          quantity: 0,
+          buyPrice: 0,
+          sellPrice: 0,
+          minStockLevel: 0,
+          description: '',
+        });
+        // Reset interaction state for add mode
+        setHasUserInteracted(false);
+      }
+      // Reset submission attempt state when dialog opens
+      setHasTriedToSubmit(false);
+      setApiError(null);
+      clearErrors();
     }
-    // Reset submission attempt state when editingItem changes
-    setHasTriedToSubmit(false);
-    setApiError(null);
-    clearErrors();
-  }, [editingItem, reset, clearErrors]);
+  }, [open, editingItem, reset, clearErrors]);
 
   const handleFormSubmit = async (data: ItemFormData) => {
     setApiError(null);
@@ -223,20 +225,14 @@ const ItemForm: React.FC<ItemFormProps> = ({
   const shouldShowError = (fieldName: keyof ItemFormData) => {
     const fieldValue = getValues(fieldName);
     const hasError = !!(errors as Record<string, any>)[fieldName];
-    
-    // For string fields (name, sku, category, description), check for empty strings
-    // For number fields, check for null/undefined/0 values
-    const isEmptyString = typeof fieldValue === 'string' && fieldValue.trim() === '';
-    const isEmptyNumber = typeof fieldValue === 'number' && (fieldValue === 0 || fieldValue === null || fieldValue === undefined);
-    const isEmpty = isEmptyString || isEmptyNumber;
-    
-    // Show errors in these cases:
+
+    // Show errors only when:
     // 1. User has tried to submit (show all errors)
     // 2. Form has been submitted by react-hook-form
-    // 3. User has interacted AND there's an error (for better UX)
-    return hasTriedToSubmit || 
-           isSubmitted ||
-           (hasUserInteracted && hasError && !isEmpty);
+    // 3. User has interacted AND there's an error AND the field has been touched
+    const fieldTouched = typeof fieldValue === 'string' ? fieldValue.length > 0 : true;
+
+    return (hasTriedToSubmit || isSubmitted) ? hasError : false;
   };
 
   return (
@@ -508,7 +504,10 @@ const Inventory: React.FC = () => {
 
   const closeModal = () => {
     setShowModal(false);
-    setEditingItem(null);
+    // Delay clearing editingItem to prevent flash from edit to add
+    setTimeout(() => {
+      setEditingItem(null);
+    }, 200);
   };
 
   const handleOpenFilter = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -628,11 +627,16 @@ const Inventory: React.FC = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
-  const formatCurrency = (amount: number): string => {
+  const formatCurrency = (amount: number | undefined | null): string => {
+    // Handle undefined, null, or NaN values
+    if (amount === undefined || amount === null || isNaN(Number(amount))) {
+      return '$0.00';
+    }
+
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
-    }).format(amount);
+    }).format(Number(amount));
   };
 
   const getStockStatus = (item: InventoryItem): { status: 'good' | 'low' | 'out'; label: string; color: 'success' | 'warning' | 'error' } => {
@@ -847,7 +851,7 @@ const Inventory: React.FC = () => {
                       <TableCell sx={{ fontWeight: 600, color: '#1C1C1E' }} align="right">Sell Price</TableCell>
                       <TableCell sx={{ fontWeight: 600, color: '#1C1C1E' }} align="right">Total Value</TableCell>
                       <TableCell sx={{ fontWeight: 600, color: '#1C1C1E' }}>Status</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: '#1C1C1E' }}>Actions</TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: '#1C1C1E', position: 'sticky', right: 0, bgcolor:'white'  }}>Actions</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -856,7 +860,7 @@ const Inventory: React.FC = () => {
                       return (
                         <TableRow key={item.id}>
                           <TableCell>
-                            <Typography variant="body1" fontWeight="medium">
+                            <Typography variant="body1" fontWeight="medium" sx={{ minWidth: 120, }}>
                               {item.name}
                             </Typography>
                           </TableCell>
@@ -866,7 +870,8 @@ const Inventory: React.FC = () => {
                               sx={{
                                 color: '#007AFF',
                                 fontWeight: 600,
-                                fontFamily: 'SF Mono, Monaco, monospace'
+                                fontFamily: 'SF Mono, Monaco, monospace',
+                                minWidth: 150,
                               }}
                             >
                               {item.sku || 'N/A'}
@@ -884,7 +889,7 @@ const Inventory: React.FC = () => {
                               size="small"
                             />
                           </TableCell>
-                          <TableCell>
+                          <TableCell sx={{ display: 'flex', position: 'sticky', right: 0, bgcolor:'white' }}>
                             <IconButton
                               color="primary"
                               onClick={() => openModal(item)}

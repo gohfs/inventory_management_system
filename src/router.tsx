@@ -6,6 +6,7 @@ import Register from './components/auth/Register';
 import Dashboard from './components/dashboard/Dashboard';
 import Inventory from './components/inventory/Inventory';
 import { Warehouse } from './components/warehouse';
+import { Sell } from './components/sell';
 import Navbar from './components/layout/Navbar';
 import LowStockAlert from './components/layout/LowStockAlert';
 import { Navigate } from '@tanstack/react-router';
@@ -415,8 +416,19 @@ const warehouseRoute = createRoute({
   ),
 });
 
+// Sell route (Super Admin only)
+const sellRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/sells',
+  component: () => (
+    <SuperAdminRoute>
+      <Sell />
+    </SuperAdminRoute>
+  ),
+});
+
 const routeTree = rootRoute.addChildren([
-  layoutRoute.addChildren([dashboardRoute, inventoryRoute, warehouseRoute]),
+  layoutRoute.addChildren([dashboardRoute, inventoryRoute, warehouseRoute, sellRoute]),
   indexRoute,
   loginRoute,
   registerRoute,

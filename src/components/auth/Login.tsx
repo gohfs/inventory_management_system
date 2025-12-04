@@ -23,6 +23,7 @@ import {
   ErrorOutline as ErrorIcon,
   CheckCircle as CheckIcon,
 } from "@mui/icons-material";
+import Logo from '../../assets/logo.jpg';
 
 const loginSchema = z.object({
   email: z
@@ -164,15 +165,34 @@ const Login: React.FC = () => {
           >
             <Box
               component="img"
-              src="https://hrcdn.net/fcore/assets/work/header/hackerrank_logo-21e2867566.svg"
+            //   src="https://hrcdn.net/fcore/assets/work/header/hackerrank_logo-21e2867566.svg"
+              src={Logo}
               alt="logo"
-              sx={{ width: 50, mb: 40 }}
+              sx={{ width: 50, mb: 40, borderRadius: "50%" }}
             />
+            {/* <Box
+                          sx={{
+                            width: 48,
+                            height: 48,
+                            borderRadius: '50%',
+                            background: 'rgba(255, 255, 255, 0.2)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '1.5rem',
+                            backdropFilter: 'blur(10px)'
+                          }}
+                        >
+                          <img src={Logo} alt="logo" style={{ maxHeight: '32px', maxWidth: '32px', borderRadius: '50%' }} />
+                        </Box> */}
 
             <Typography variant="h6" sx={{ mb: 1 }}>
               Welcome to
             </Typography>
 
+            <Typography variant="h4" sx={{ fontWeight: 700 }}>
+              Semesta Arus Teknologi
+            </Typography>
             <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
               Inventory Management System
             </Typography>

@@ -9,26 +9,16 @@ interface DashboardStatsResponse {
   low_stock_items: number;
   total_categories: number;
   total_value: number;
-  // Additional fields that might be returned by the API
-  recent_activities?: Array<{
-    id: string;
-    type: string;
-    description: string;
-    item_name: string;
-    timestamp: string;
-    user_id: string;
-  }>;
   warehouse_name?: string;
 }
 
 // Transform snake_case response to camelCase for frontend
-const transformStatsResponse = (data: DashboardStatsResponse): InventoryStats & { recentActivities?: any[]; warehouseName?: string } => {
+const transformStatsResponse = (data: DashboardStatsResponse): InventoryStats & { warehouseName?: string } => {
   return {
     totalItems: data.total_items,
     lowStockItems: data.low_stock_items,
     totalCategories: data.total_categories,
     totalValue: data.total_value,
-    recentActivities: data.recent_activities,
     warehouseName: data.warehouse_name,
   };
 };

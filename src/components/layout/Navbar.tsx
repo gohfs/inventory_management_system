@@ -22,7 +22,8 @@ import {
   Settings as SettingsIcon,
   Logout as LogoutIcon,
   KeyboardArrowDown as ArrowDownIcon,
-  Warehouse as WarehouseIcon
+  Warehouse as WarehouseIcon,
+  PointOfSale as SellIcon
 } from '@mui/icons-material';
 import Logo from '../../assets/logo.jpg';
 
@@ -64,7 +65,10 @@ const Navbar: React.FC = () => {
   const navItems = [
     { path: '/dashboard', label: 'Dashboard', icon: <DashboardIcon fontSize="small" /> },
     { path: '/inventory', label: 'Inventory', icon: <InventoryIcon fontSize="small" /> },
-    ...(isSuperAdmin ? [{ path: '/warehouses', label: 'Warehouses', icon: <WarehouseIcon fontSize="small" /> }] : [])
+    ...(isSuperAdmin ? [
+      { path: '/warehouses', label: 'Warehouses', icon: <WarehouseIcon fontSize="small" /> },
+      { path: '/sells', label: 'Sells', icon: <SellIcon fontSize="small" /> }
+    ] : [])
   ];
 
   return (
