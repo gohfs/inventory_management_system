@@ -1,16 +1,44 @@
 # Inventory Management API - Backend
 
-FastAPI-based REST API for inventory management system with user authentication.
+FastAPI-based REST API for inventory management system with comprehensive features including user management, warehouse operations, inventory tracking, sell transactions, and activity logging.
 
 ## Features
 
-- User registration and authentication (JWT)
-- User CRUD operations
-- Clean Architecture pattern
-- PostgreSQL database
-- Password hashing with bcrypt
-- Protected routes with middleware
-- CORS enabled for frontend integration
+- **User Management**: Registration, authentication with JWT, role-based access (Super Admin, Warehouse)
+- **Warehouse Management**: CRUD operations for multiple warehouses
+- **Inventory Management**: Track inventory items across warehouses with stock levels
+- **Sell Transactions**: Record sales with automatic stock updates (Super Admin only)
+- **Activity Logging**: Complete audit trail of all system operations
+- **Clean Architecture**: Separated layers (Domain, Application, Infrastructure, Presentation)
+- **Database Migrations**: Alembic for version-controlled database schema
+- **Auto-Seeding**: Automatic initial data creation on first run
+- **API Documentation**: Interactive Swagger UI and ReDoc
+
+## Quick Start
+
+### Option 1: Automated Setup (Recommended)
+
+**Windows:**
+```bash
+setup.bat
+```
+
+**Linux/Mac:**
+```bash
+chmod +x setup.sh
+./setup.sh
+```
+
+The script will:
+1. Create virtual environment
+2. Install dependencies
+3. Setup .env file
+4. Run database migrations
+5. Seed initial data
+
+### Option 2: Manual Setup
+
+See [SETUP.md](SETUP.md) for detailed step-by-step instructions.
 
 ## Setup
 
@@ -39,12 +67,24 @@ cp .env.example .env
 # Edit .env with your configuration
 ```
 
-4. Ensure PostgreSQL is running and database `satek` exists:
+4. Create PostgreSQL database:
 ```sql
 CREATE DATABASE satek;
 ```
 
+5. Run database migrations:
+```bash
+alembic upgrade head
+```
+
 ### Running the Application
+
+**Important:** On first run, the application will automatically seed initial data including:
+- Super Admin user (email: admin@satek.com, password: admin1234)
+- 10 Warehouses across Indonesia
+- 10 Inventory items (2 with low stock for testing)
+- 15 Sample sell transactions
+- 30+ Activity logs
 
 Start the development server:
 ```bash
@@ -61,9 +101,17 @@ The API will be available at:
 - Interactive docs: http://localhost:8000/docs
 - Alternative docs: http://localhost:8000/redoc
 
+## Default Credentials
+
+**Super Admin:**
+- Email: `admin@satek.com`
+- Password: `admin1234`
+
+⚠️ **Change this password immediately in production!**
+
 ## API Endpoints
 
-### Authentication
+### Authentication (Public)
 - `POST /api/v1/auth/register` - Register new user
 - `POST /api/v1/auth/login` - Login user
 - `POST /api/v1/auth/logout` - Logout user
@@ -74,6 +122,31 @@ The API will be available at:
 - `GET /api/v1/users/{user_id}` - Get user by ID
 - `PUT /api/v1/users/{user_id}` - Update user
 - `DELETE /api/v1/users/{user_id}` - Delete user
+
+### Warehouses (Protected)
+- `GET /api/v1/warehouses` - List all warehouses
+- `POST /api/v1/warehouses` - Create warehouse
+- `GET /api/v1/warehouses/{id}` - Get warehouse by ID
+- `PUT /api/v1/warehouses/{id}` - Update warehouse
+- `DELETE /api/v1/warehouses/{id}` - Delete warehouse
+
+### Inventory (Protected)
+- `GET /api/v1/inventories` - List all inventory items
+- `GET /api/v1/inventories/stats` - Get inventory statistics
+- `POST /api/v1/inventories` - Create inventory item
+- `GET /api/v1/inventories/{id}` - Get inventory item by ID
+- `PUT /api/v1/inventories/{id}` - Update inventory item
+- `DELETE /api/v1/inventories/{id}` - Delete inventory item
+
+### Sell Transactions (Protected)
+- `POST /api/v1/sell` - Create sell transaction (Super Admin only)
+- `GET /api/v1/sell` - List all sell transactions
+- `GET /api/v1/sell/warehouse/{id}` - Get transactions by warehouse
+- `GET /api/v1/sell/inventory/{id}` - Get transactions by inventory item
+
+### Activity Logs (Protected)
+- `GET /api/v1/activity` - Get all activities (with filters)
+- `GET /api/v1/activity/entity/{type}/{id}` - Get activities for specific entity
 
 ## Project Structure
 
@@ -113,8 +186,41 @@ The API uses JWT (JSON Web Tokens) for authentication. To access protected endpo
 
 PostgreSQL database with the following configuration:
 - Database name: `satek`
-- Default password: `1234`
-- Tables are auto-created on first run
+- Tables created via Alembic migrations
+- Auto-seeding on first run
+
+### Database Schema
+
+The application uses these main tables:
+- **users** - User accounts with role-based access
+- **warehouses** - Warehouse locations
+- **inventory_items** - Inventory with stock tracking
+- **sell_transactions** - Sales records with automatic stock updates
+- **activities** - Complete audit trail of all operations
+
+### Migrations
+
+```bash
+# Create a new migration after model changes
+alembic revision --autogenerate -m "description"
+
+# Apply all migrations
+alembic upgrade head
+
+# Rollback one migration
+alembic downgrade -1
+
+# Rollback all migrations
+alembic downgrade base
+```
+
+## Low Stock Alert
+
+Items are considered **low stock** when quantity is below 5 units. The seed data includes:
+- **Wireless Mouse Logitech**: 3 units (LOW STOCK)
+- **Printer HP LaserJet**: 2 units (LOW STOCK)
+
+All items have `min_stock_level` set to 50 for testing alerts.
 
 ## Development
 

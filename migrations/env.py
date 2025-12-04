@@ -17,7 +17,7 @@ if config.config_file_name is not None:
 # add your model's MetaData object here
 # for 'autogenerate' support
 from src.infrastructure.database.database import Base
-from src.domain.models import user, inventory, warehouse
+from src.domain.models import User, Warehouse, InventoryItem, SellTransaction, Activity
 
 target_metadata = Base.metadata
 

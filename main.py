@@ -4,9 +4,9 @@ from src.core.config import settings
 from src.core.logging_middleware import LoggingMiddleware
 from src.infrastructure.database.database import init_db, get_db
 from src.infrastructure.database.seed import seed_database
-from src.presentation.api.v1 import auth, users, inventory, warehouses
+from src.presentation.api.v1 import auth, users, inventory, warehouses, sell_transactions, activities
 # Import models to ensure they are registered with SQLAlchemy
-from src.domain.models import User, Warehouse, InventoryItem
+from src.domain.models import User, Warehouse, InventoryItem, SellTransaction, Activity
 
 # Initialize FastAPI application
 app = FastAPI(
@@ -63,6 +63,8 @@ app.include_router(auth.router, prefix=settings.API_V1_PREFIX)
 app.include_router(users.router, prefix=settings.API_V1_PREFIX)
 app.include_router(warehouses.router, prefix=settings.API_V1_PREFIX)
 app.include_router(inventory.router, prefix=settings.API_V1_PREFIX)
+app.include_router(sell_transactions.router, prefix=settings.API_V1_PREFIX)
+app.include_router(activities.router, prefix=settings.API_V1_PREFIX)
 
 
 if __name__ == "__main__":
