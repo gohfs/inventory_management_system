@@ -87,13 +87,9 @@ alembic upgrade head
 - 30+ Activity logs
 
 Start the development server:
+using uvicorn directly:
 ```bash
-python main.py
-```
-
-Or using uvicorn directly:
-```bash
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
+uvicorn main:app --reload
 ```
 
 The API will be available at:
