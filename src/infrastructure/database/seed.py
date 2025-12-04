@@ -98,7 +98,7 @@ def seed_warehouses(db: Session) -> list[Warehouse]:
 
 def seed_inventory_items(db: Session, warehouses: list[Warehouse]) -> list[InventoryItem]:
     """
-    Create 10 inventory items distributed across warehouses.
+    Create 10 inventory items for each warehouse (100 items total).
 
     Args:
         db: Database session
@@ -107,55 +107,68 @@ def seed_inventory_items(db: Session, warehouses: list[Warehouse]) -> list[Inven
     Returns:
         List of inventory item instances
     """
-    inventory_data = [
-        {"name": "Laptop Dell XPS 15", "sku": "LAP-DELL-XPS15", "description": "15-inch high-performance laptop",
-         "quantity": 50, "buy_price": 15000000, "sell_price": 18000000, "category": "Electronics", "min_stock_level": 50},
-        {"name": "Office Chair Ergonomic", "sku": "CHR-ERG-001", "description": "Comfortable ergonomic office chair",
-         "quantity": 120, "buy_price": 1500000, "sell_price": 2000000, "category": "Furniture", "min_stock_level": 50},
-        {"name": "Wireless Mouse Logitech", "sku": "MSE-LOG-WRL", "description": "Wireless optical mouse",
+    # Base inventory data - will be created for each warehouse
+    inventory_templates = [
+        {"name": "Laptop Dell XPS 15", "sku_prefix": "LAP-DELL-XPS15", "description": "15-inch high-performance laptop",
+         "quantity": 50, "buy_price": 15000000, "sell_price": 18000000, "category": "Electronics", "min_stock_level": 10},
+        {"name": "Office Chair Ergonomic", "sku_prefix": "CHR-ERG-001", "description": "Comfortable ergonomic office chair",
+         "quantity": 120, "buy_price": 1500000, "sell_price": 2000000, "category": "Furniture", "min_stock_level": 20},
+        {"name": "Wireless Mouse Logitech", "sku_prefix": "MSE-LOG-WRL", "description": "Wireless optical mouse",
          "quantity": 3, "buy_price": 250000, "sell_price": 350000, "category": "Electronics", "min_stock_level": 50},  # LOW STOCK
-        {"name": "Monitor LG 27 inch", "sku": "MON-LG-27", "description": "27-inch Full HD monitor",
-         "quantity": 75, "buy_price": 3000000, "sell_price": 4000000, "category": "Electronics", "min_stock_level": 50},
-        {"name": "Standing Desk", "sku": "DSK-STD-001", "description": "Adjustable height standing desk",
-         "quantity": 40, "buy_price": 3500000, "sell_price": 5000000, "category": "Furniture", "min_stock_level": 50},
-        {"name": "Mechanical Keyboard", "sku": "KBD-MCH-RGB", "description": "RGB mechanical gaming keyboard",
-         "quantity": 90, "buy_price": 1200000, "sell_price": 1800000, "category": "Electronics", "min_stock_level": 50},
-        {"name": "Printer HP LaserJet", "sku": "PRT-HP-LJ", "description": "Black and white laser printer",
+        {"name": "Monitor LG 27 inch", "sku_prefix": "MON-LG-27", "description": "27-inch Full HD monitor",
+         "quantity": 75, "buy_price": 3000000, "sell_price": 4000000, "category": "Electronics", "min_stock_level": 15},
+        {"name": "Standing Desk", "sku_prefix": "DSK-STD-001", "description": "Adjustable height standing desk",
+         "quantity": 40, "buy_price": 3500000, "sell_price": 5000000, "category": "Furniture", "min_stock_level": 10},
+        {"name": "Mechanical Keyboard", "sku_prefix": "KBD-MCH-RGB", "description": "RGB mechanical gaming keyboard",
+         "quantity": 90, "buy_price": 1200000, "sell_price": 1800000, "category": "Electronics", "min_stock_level": 25},
+        {"name": "Printer HP LaserJet", "sku_prefix": "PRT-HP-LJ", "description": "Black and white laser printer",
          "quantity": 2, "buy_price": 4000000, "sell_price": 5500000, "category": "Electronics", "min_stock_level": 50},  # LOW STOCK
-        {"name": "Filing Cabinet 4-Drawer", "sku": "CAB-FIL-4D", "description": "Metal filing cabinet with 4 drawers",
-         "quantity": 60, "buy_price": 2000000, "sell_price": 2800000, "category": "Furniture", "min_stock_level": 50},
-        {"name": "Webcam HD 1080p", "sku": "WBC-HD-1080", "description": "Full HD webcam with microphone",
-         "quantity": 100, "buy_price": 800000, "sell_price": 1200000, "category": "Electronics", "min_stock_level": 50},
-        {"name": "Desk Lamp LED", "sku": "LMP-DSK-LED", "description": "Adjustable LED desk lamp",
-         "quantity": 150, "buy_price": 300000, "sell_price": 500000, "category": "Office Supplies", "min_stock_level": 50}
+        {"name": "Filing Cabinet 4-Drawer", "sku_prefix": "CAB-FIL-4D", "description": "Metal filing cabinet with 4 drawers",
+         "quantity": 60, "buy_price": 2000000, "sell_price": 2800000, "category": "Furniture", "min_stock_level": 15},
+        {"name": "Webcam HD 1080p", "sku_prefix": "WBC-HD-1080", "description": "Full HD webcam with microphone",
+         "quantity": 100, "buy_price": 800000, "sell_price": 1200000, "category": "Electronics", "min_stock_level": 30},
+        {"name": "Desk Lamp LED", "sku_prefix": "LMP-DSK-LED", "description": "Adjustable LED desk lamp",
+         "quantity": 150, "buy_price": 300000, "sell_price": 500000, "category": "Office Supplies", "min_stock_level": 40}
     ]
 
     inventory_items = []
-    for idx, data in enumerate(inventory_data):
-        existing = db.query(InventoryItem).filter(InventoryItem.sku == data["sku"]).first()
-        if not existing:
-            # Distribute items across warehouses
-            warehouse = warehouses[idx % len(warehouses)]
-            item = InventoryItem(
-                id=str(uuid.uuid4()),
-                warehouse_id=warehouse.id,
-                name=data["name"],
-                sku=data["sku"],
-                description=data["description"],
-                quantity=data["quantity"],
-                buy_price=data["buy_price"],
-                sell_price=data["sell_price"],
-                category=data["category"],
-                min_stock_level=data["min_stock_level"]
-            )
-            db.add(item)
-            inventory_items.append(item)
-            print(f"Created inventory item: {data['name']} in {warehouse.name}")
-        else:
-            inventory_items.append(existing)
-            print(f"Inventory item already exists: {data['name']}")
+
+    # Create 10 items for each warehouse
+    for idx, warehouse in enumerate(warehouses):
+        print(f"\n  Creating inventory for {warehouse.name}:")
+        for template in inventory_templates:
+            # Generate unique SKU by adding warehouse index (W01, W02, etc.)
+            warehouse_code = f"W{idx+1:02d}"  # W01, W02, W03, etc.
+            sku = f"{template['sku_prefix']}-{warehouse_code}"
+
+            # Check if item already exists
+            existing = db.query(InventoryItem).filter(InventoryItem.sku == sku).first()
+            if not existing:
+                # Add some variation to quantities for realism
+                quantity_variation = random.randint(-20, 30)
+                adjusted_quantity = max(0, template["quantity"] + quantity_variation)
+
+                item = InventoryItem(
+                    id=str(uuid.uuid4()),
+                    warehouse_id=warehouse.id,
+                    name=template["name"],
+                    sku=sku,
+                    description=template["description"],
+                    quantity=adjusted_quantity,
+                    buy_price=template["buy_price"],
+                    sell_price=template["sell_price"],
+                    category=template["category"],
+                    min_stock_level=template["min_stock_level"]
+                )
+                db.add(item)
+                inventory_items.append(item)
+                print(f"    - Created: {template['name']} (SKU: {sku}, Qty: {adjusted_quantity})")
+            else:
+                inventory_items.append(existing)
+                print(f"    - Already exists: {template['name']} (SKU: {sku})")
 
     db.commit()
+    print(f"\n  Total inventory items created/found: {len(inventory_items)}")
     return inventory_items
 
 
@@ -181,14 +194,16 @@ def seed_sell_transactions(db: Session, warehouses: list[Warehouse], inventory_i
     transactions = []
     # Create 15 transactions
     for i in range(15):
-        # Pick random inventory item
+        # Pick random inventory item with available stock
         item = random.choice(inventory_items)
-        # Random quantity between 1 and 10
-        quantity = random.randint(1, min(10, item.quantity))
 
         # Skip if not enough quantity
-        if item.quantity < quantity:
+        if item.quantity < 1:
             continue
+
+        # Random quantity between 1 and min(10, available quantity)
+        max_quantity = min(10, item.quantity)
+        quantity = random.randint(1, max_quantity)
 
         transaction = SellTransaction(
             id=str(uuid.uuid4()),
