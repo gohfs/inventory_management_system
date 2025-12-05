@@ -63,7 +63,7 @@ const itemSchema = z.object({
     .min(1, 'Category is required'),
   quantity: z
     .number()
-    .min(0, 'Quantity cannot be negative'),
+    .nonnegative('Quantity cannot be negative'),
   buyPrice: z
     .number()
     .min(0, 'Buy price must be non-negative'),
@@ -176,13 +176,12 @@ const ItemForm: React.FC<ItemFormProps> = ({
     }
     
     // Check for empty required fields (additional safety check)
-    const requiredFields: (keyof ItemFormData)[] = ['name', 'sku', 'category', 'quantity', 'buyPrice', 'sellPrice'];
+    const requiredFields: (keyof ItemFormData)[] = ['name', 'sku', 'category'];
     const emptyFields = requiredFields.filter(field => {
       const value = getValues(field);
-      return !value || (typeof value === 'string' && value.trim() === '') || 
-             (typeof value === 'number' && value === 0);
+      return !value || (typeof value === 'string' && value.trim() === '');
     });
-    
+
     if (emptyFields.length > 0) {
       console.log('Empty required fields:', emptyFields);
       return;
@@ -242,6 +241,7 @@ const ItemForm: React.FC<ItemFormProps> = ({
       maxWidth="md"
       fullWidth
     >
+        
       <DialogTitle>
         {editingItem ? 'Edit Item' : 'Add New Item'}
       </DialogTitle>
@@ -431,6 +431,9 @@ const ItemForm: React.FC<ItemFormProps> = ({
 
 const Inventory: React.FC = () => {
   const user = useAuthStore((state: any) => state.user);
+
+  // Check if user is super admin
+  const isSuperAdmin = user?.role?.toUpperCase() === 'SUPER_ADMIN';
 
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
@@ -661,7 +664,8 @@ const Inventory: React.FC = () => {
               Manage your products and stock levels
             </Typography>
           </Box>
-          <Button
+          {!isSuperAdmin && (
+<Button
             onClick={() => openModal()}
             variant="contained"
             size="large"
@@ -680,6 +684,7 @@ const Inventory: React.FC = () => {
           >
             Add New Item
           </Button>
+          )}
         </Box>
       </Box>
 
@@ -851,7 +856,9 @@ const Inventory: React.FC = () => {
                       <TableCell sx={{ fontWeight: 600, color: '#1C1C1E' }} align="right">Sell Price</TableCell>
                       <TableCell sx={{ fontWeight: 600, color: '#1C1C1E' }} align="right">Total Value</TableCell>
                       <TableCell sx={{ fontWeight: 600, color: '#1C1C1E' }}>Status</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: '#1C1C1E', position: 'sticky', right: 0, bgcolor:'white'  }}>Actions</TableCell>
+                      {!isSuperAdmin && (
+                        <TableCell sx={{ fontWeight: 600, color: '#1C1C1E', position: 'sticky', right: 0, bgcolor:'white'  }}>Actions</TableCell>
+                      )}
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -882,6 +889,7 @@ const Inventory: React.FC = () => {
                           <TableCell align="right">{formatCurrency(item.buyPrice)}</TableCell>
                           <TableCell align="right">{formatCurrency(item.sellPrice)}</TableCell>
                           <TableCell align="right">{formatCurrency(item.quantity * item.buyPrice)}</TableCell>
+
                           <TableCell>
                             <Chip
                               label={stockStatus.label}
@@ -889,6 +897,7 @@ const Inventory: React.FC = () => {
                               size="small"
                             />
                           </TableCell>
+                          {!isSuperAdmin && (
                           <TableCell sx={{ display: 'flex', position: 'sticky', right: 0, bgcolor:'white' }}>
                             <IconButton
                               color="primary"
@@ -908,6 +917,7 @@ const Inventory: React.FC = () => {
                               <DeleteIcon />
                             </IconButton>
                           </TableCell>
+                          )}
                         </TableRow>
                       );
                     })}

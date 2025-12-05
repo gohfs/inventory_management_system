@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { useAuthStore } from '../../store/authStore';
 import { useDashboardStats } from '../../hooks/useDashboardStats';
@@ -15,11 +15,25 @@ import {
   Alert,
   Stack,
   CircularProgress,
-  Skeleton
+  Skeleton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  IconButton,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper
 } from '@mui/material';
+import { Close as CloseIcon } from '@mui/icons-material';
 
 const Dashboard: React.FC = () => {
   const user = useAuthStore((state) => state.user);
+  const [activityModalOpen, setActivityModalOpen] = useState(false);
 
   // Debug logging
   React.useEffect(() => {
@@ -35,12 +49,25 @@ const Dashboard: React.FC = () => {
   const shouldFetchWarehouse = !!(user?.warehouseId && !stats?.warehouseName);
   const { data: warehouseData } = useWarehouseById(shouldFetchWarehouse ? user?.warehouseId : undefined);
 
-  // Fetch recent activities using the new entity endpoint
-  const shouldFetchActivities = !!user?.warehouseId;
+  // Determine if user is super admin
+  const isSuperAdmin = user?.role?.toUpperCase() === 'SUPER_ADMIN';
+
+  // Fetch recent activities using warehouse endpoint
+  // For warehouse roles: fetch all warehouse activities (limit 100)
+  // For super admin: fetch latest 10 activities (will need warehouse_id still)
+  const activityLimit = isSuperAdmin ? 10 : 100;
   const { data: recentActivities, isLoading: activitiesLoading, error: activitiesError } = useWarehouseActivities(
-    shouldFetchActivities ? (user?.warehouseId || '') : '',
-    5
+    user?.warehouseId || '',
+    activityLimit
   );
+
+  // Display activities (limited for preview in card)
+  const displayActivities = isSuperAdmin
+    ? recentActivities?.slice(0, 10)
+    : recentActivities?.slice(0, 5);
+
+    console.log('[Dashboard] Displaying activities:', recentActivities);
+    
 
   // Debug logging for query state
   React.useEffect(() => {
@@ -53,7 +80,7 @@ const Dashboard: React.FC = () => {
       hasRecentActivities: !!recentActivities,
       activitiesCount: recentActivities?.length || 0,
       stats: stats,
-      shouldFetchActivities,
+      isSuperAdmin,
       warehouseId: user?.warehouseId
     });
     if (stats) {
@@ -71,7 +98,7 @@ const Dashboard: React.FC = () => {
     if (activitiesError) {
       console.error('[Dashboard] Activities error:', activitiesError);
     }
-  }, [isLoading, error, stats, recentActivities, activitiesLoading, activitiesError, shouldFetchActivities, user?.warehouseId]);
+  }, [isLoading, error, stats, recentActivities, activitiesLoading, activitiesError, isSuperAdmin, user?.warehouseId]);
 
   const formatCurrency = (amount: number | undefined | null): string => {
     // Handle undefined, null, or NaN values
@@ -298,19 +325,30 @@ const Dashboard: React.FC = () => {
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
         <Card sx={{ flex: '1 1 400px', minWidth: '400px' }}>
           <CardContent>
-            <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
-              Recent Activity
-            </Typography>
-            
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                Recent Activity {isSuperAdmin && '(Latest 10)'}
+              </Typography>
+              {displayActivities && displayActivities.length > 0 && (
+                <Button
+                  size="small"
+                  onClick={() => setActivityModalOpen(true)}
+                  sx={{ textTransform: 'none' }}
+                >
+                  View All
+                </Button>
+              )}
+            </Box>
+
             {activitiesError ? (
               <Alert severity="warning" sx={{ mt: 2 }}>
                 <Typography variant="body2">
                   Unable to load recent activities. This feature may require backend API support.
                 </Typography>
               </Alert>
-            ) : !isLoading && !activitiesLoading && recentActivities && recentActivities.length > 0 ? (
+            ) : !isLoading && !activitiesLoading && displayActivities && displayActivities.length > 0 ? (
               <Stack spacing={2}>
-                {recentActivities.map((activity) => {
+                {displayActivities.map((activity) => {
                   // Get action icon based on type
                   const getActionIcon = (type: string) => {
                     switch(type.toLowerCase()) {
@@ -324,6 +362,7 @@ const Dashboard: React.FC = () => {
                   return (
                     <Box
                       key={activity.id}
+                      onClick={() => setActivityModalOpen(true)}
                       sx={{
                         display: 'flex',
                         alignItems: 'center',
@@ -332,7 +371,15 @@ const Dashboard: React.FC = () => {
                         bgcolor: 'grey.50',
                         borderRadius: 1,
                         border: 1,
-                        borderColor: 'grey.200'
+                        borderColor: 'grey.200',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        '&:hover': {
+                          bgcolor: 'grey.100',
+                          borderColor: 'primary.main',
+                          transform: 'translateY(-2px)',
+                          boxShadow: 1
+                        }
                       }}
                     >
                       <Typography variant="h6">{getActionIcon(activity.type)}</Typography>
@@ -449,6 +496,105 @@ const Dashboard: React.FC = () => {
           Manage Inventory
         </Button>
       </Box> */}
+
+      {/* Activity Details Modal */}
+      <Dialog
+        open={activityModalOpen}
+        onClose={() => setActivityModalOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              {isSuperAdmin ? 'All Activities (Latest 10)' : 'All Warehouse Activities'}
+            </Typography>
+            <IconButton onClick={() => setActivityModalOpen(false)} size="small">
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent dividers>
+          {activitiesLoading ? (
+            <Box sx={{ textAlign: 'center', py: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : (recentActivities && recentActivities.length > 0) ? (
+            <TableContainer component={Paper} elevation={0}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 600 }}>Type</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Description</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Item</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {recentActivities.map((activity) => {
+                    const getActionIcon = (type: string) => {
+                      switch(type.toLowerCase()) {
+                        case 'create': return '➕';
+                        case 'update': return '✏️';
+                        case 'delete': return '🗑️';
+                        default: return '📝';
+                      }
+                    };
+
+                    const getActionColor = (type: string) => {
+                      switch(type.toLowerCase()) {
+                        case 'create': return 'success';
+                        case 'update': return 'info';
+                        case 'delete': return 'error';
+                        default: return 'default';
+                      }
+                    };
+
+                    return (
+                      <TableRow key={activity.id} hover>
+                        <TableCell>
+                          <Chip
+                            label={activity.type}
+                            icon={<span>{getActionIcon(activity.type)}</span>}
+                            color={getActionColor(activity.type) as any}
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">
+                            {activity.description}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                            {activity.itemName || '-'}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" color="text.secondary">
+                            {formatDate(activity.timestamp)}
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          ) : (
+            <Box sx={{ textAlign: 'center', py: 4 }}>
+              <Typography variant="body2" color="text.secondary">
+                No activities found
+              </Typography>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setActivityModalOpen(false)}>
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

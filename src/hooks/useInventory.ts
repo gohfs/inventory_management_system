@@ -96,17 +96,9 @@ export const useUpdateInventoryItem = () => {
       // Transform snake_case to camelCase for frontend
       return toCamelCase(response.data);
     },
-    onSuccess: (updatedItem) => {
-      // Update the cache with the updated item
-      queryClient.setQueryData<InventoryItem[]>(
-        ['inventoryItems'],
-        (oldData) => {
-          if (!oldData) return oldData;
-          return oldData.map(item =>
-            item.id === updatedItem.id ? updatedItem : item
-          );
-        }
-      );
+    onSuccess: () => {
+      // Invalidate all inventory queries to refetch with latest data
+      queryClient.invalidateQueries({ queryKey: ['inventoryItems'] });
     },
   });
 };

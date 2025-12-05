@@ -62,10 +62,10 @@ export const useSells = () => {
       // API returns data directly as an array, not wrapped in ApiResponse
       const response = await apiClient.get<any[]>('/sell');
 
-      console.log('=== DEBUG useSells ===');
-      console.log('response.data:', response.data);
-      console.log('Is array?:', Array.isArray(response.data));
-      console.log('Length:', response.data?.length);
+    //   console.log('=== DEBUG useSells ===');
+    //   console.log('response.data:', response.data);
+    //   console.log('Is array?:', Array.isArray(response.data));
+    //   console.log('Length:', response.data?.length);
 
       // Log first item raw structure
       if (response.data && response.data.length > 0) {
