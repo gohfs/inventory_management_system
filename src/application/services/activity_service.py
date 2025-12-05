@@ -92,3 +92,16 @@ class ActivityService:
             skip=skip,
             limit=limit
         )
+
+    def get_activities_by_warehouse(
+        self,
+        warehouse_id: str,
+        skip: int = 0,
+        limit: int = 100
+    ) -> List[Activity]:
+        """Get all activities for a specific warehouse."""
+        return self.activity_repository.get_by_warehouse_id(
+            warehouse_id=warehouse_id,
+            skip=skip,
+            limit=limit
+        )

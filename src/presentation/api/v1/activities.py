@@ -64,6 +64,49 @@ def get_all_activities(
     )
 
 
+@router.get("/warehouse/{warehouse_id}", response_model=ActivityListResponse)
+def get_activities_by_warehouse(
+    warehouse_id: str,
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(100, ge=1, le=500, description="Maximum number of records to return"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get all activities for a specific warehouse (Protected route).
+
+    This endpoint filters activities by warehouse_id stored in the activity metadata.
+    It returns all warehouse-related activities including:
+    - Warehouse creation
+    - Inventory operations in the warehouse
+    - Sell transactions from the warehouse
+    - Stock adjustments in the warehouse
+
+    Args:
+        warehouse_id: ID of the warehouse
+        skip: Number of records to skip (for pagination)
+        limit: Maximum number of records to return (max 500)
+        db: Database session
+        current_user: Current authenticated user
+
+    Returns:
+        List of activities for the specified warehouse with total count
+    """
+    service = ActivityService(db)
+    activities = service.get_activities_by_warehouse(
+        warehouse_id=warehouse_id,
+        skip=skip,
+        limit=limit
+    )
+
+    return ActivityListResponse(
+        success=True,
+        data=activities,
+        total=len(activities),
+        error=None
+    )
+
+
 @router.get("/entity/{entity_type}/{entity_id}", response_model=ActivityListResponse)
 def get_activities_by_entity(
     entity_type: str,

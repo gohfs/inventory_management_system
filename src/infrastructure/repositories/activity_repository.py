@@ -48,3 +48,9 @@ class ActivityRepository:
         return self.db.query(Activity).filter(
             Activity.entity_type == entity_type
         ).order_by(Activity.created_at.desc()).offset(skip).limit(limit).all()
+
+    def get_by_warehouse_id(self, warehouse_id: str, skip: int = 0, limit: int = 100) -> List[Activity]:
+        """Get all activities for a specific warehouse by filtering metadata."""
+        return self.db.query(Activity).filter(
+            Activity.meta_data['warehouse_id'].as_string() == warehouse_id
+        ).order_by(Activity.created_at.desc()).offset(skip).limit(limit).all()

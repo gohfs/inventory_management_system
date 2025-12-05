@@ -263,7 +263,11 @@ def seed_activities(db: Session, super_admin: User, warehouses: list[Warehouse],
             entity_type="warehouse",
             entity_id=warehouse.id,
             description=f"Created warehouse: {warehouse.name}",
-            meta_data={"warehouse_name": warehouse.name, "location": warehouse.location}
+            meta_data={
+                "warehouse_id": warehouse.id,
+                "warehouse_name": warehouse.name,
+                "location": warehouse.location
+            }
         ))
 
     # Activities for inventory creation
@@ -277,9 +281,10 @@ def seed_activities(db: Session, super_admin: User, warehouses: list[Warehouse],
             entity_id=item.id,
             description=f"Created inventory item: {item.name}",
             meta_data={
+                "warehouse_id": item.warehouse_id,
+                "warehouse_name": warehouse.name if warehouse else "Unknown",
                 "item_name": item.name,
                 "sku": item.sku,
-                "warehouse_name": warehouse.name if warehouse else "Unknown",
                 "initial_quantity": item.quantity
             }
         ))
@@ -298,6 +303,7 @@ def seed_activities(db: Session, super_admin: User, warehouses: list[Warehouse],
                 entity_id=transaction.id,
                 description=f"Sold {transaction.quantity} units of {item.name} from {warehouse.name}",
                 meta_data={
+                    "warehouse_id": transaction.warehouse_id,
                     "warehouse_name": warehouse.name,
                     "item_name": item.name,
                     "quantity": transaction.quantity,
@@ -320,6 +326,7 @@ def seed_activities(db: Session, super_admin: User, warehouses: list[Warehouse],
                 entity_id=item.id,
                 description=f"Stock reduced by {transaction.quantity} units due to sale",
                 meta_data={
+                    "warehouse_id": transaction.warehouse_id,
                     "warehouse_name": warehouse.name,
                     "item_name": item.name,
                     "quantity_change": -transaction.quantity,
@@ -337,6 +344,7 @@ def seed_activities(db: Session, super_admin: User, warehouses: list[Warehouse],
             entity_id=item.id,
             description=f"Updated inventory item: {item.name}",
             meta_data={
+                "warehouse_id": item.warehouse_id,
                 "item_name": item.name,
                 "sku": item.sku,
                 "changes": "Price adjustment"
